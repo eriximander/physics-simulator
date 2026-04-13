@@ -174,14 +174,22 @@
 
         const rodsAtA = rodsTouching(aIdx);
         const rodsAtB = rodsTouching(bIdx);
-        const aPartRod = rodsAtA.map(i => state.rods[i]).find(r => r.part != null);
-        const bPartRod = rodsAtB.map(i => state.rods[i]).find(r => r.part != null);
 
-        // パーツ決定: a 側のパーツを優先、両端が別パーツなら b を a に吸収
-        let partIdx = aPartRod ? aPartRod.part : (bPartRod ? bPartRod.part : -1);
-        if (aPartRod && bPartRod && aPartRod.part !== bPartRod.part) {
-          const keepIdx = aPartRod.part;
-          const mergeIdx = bPartRod.part;
+        // 端点で触れている既存パーツを拾う (touch 頂点にある part-rod のどれか)
+        const findPartAt = (touching) => {
+          for (const ri of touching) {
+            if (state.rods[ri].part != null) return state.rods[ri].part;
+          }
+          return -1;
+        };
+        const aPartIdx = findPartAt(rodsAtA);
+        const bPartIdx = findPartAt(rodsAtB);
+
+        // パーツ決定: どちらかに既存パーツがあれば流用、両端が別パーツなら合体
+        let partIdx = aPartIdx >= 0 ? aPartIdx : bPartIdx;
+        if (aPartIdx >= 0 && bPartIdx >= 0 && aPartIdx !== bPartIdx) {
+          const keepIdx = aPartIdx;
+          const mergeIdx = bPartIdx;
           for (const r of state.rods) if (r.part === mergeIdx) r.part = keepIdx;
           state.parts.splice(mergeIdx, 1);
           for (const r of state.rods) {
@@ -190,11 +198,31 @@
           partIdx = keepIdx > mergeIdx ? keepIdx - 1 : keepIdx;
         }
 
-        // 新パーツが必要なら作る
+        // まだパーツが無ければ新規作成
         if (partIdx < 0) {
           state.parts.push({ name: `Part${++state.counters.pt}` });
           partIdx = state.parts.length - 1;
         }
+
+        // 端点に触れている「単独ロッド (.part == null)」をこのパーツに吸収する。
+        // 同じ端点に既存のアンカー (このパーツ内のロッド) があれば、吸収時に
+        // その場で角度拘束を張って剛性を確保する。
+        const absorbAt = (vertex, touching) => {
+          let anchor = touching.find(ri => state.rods[ri].part === partIdx);
+          for (const ri of touching) {
+            const rod = state.rods[ri];
+            if (rod.part === partIdx) continue;   // 既にこのパーツ
+            if (rod.part != null) continue;       // 他パーツ所属は奪わない
+            rod.part = partIdx;
+            if (anchor != null && anchor !== ri) {
+              addAngleConstraintAt(vertex, anchor, ri);
+            } else if (anchor == null) {
+              anchor = ri;
+            }
+          }
+        };
+        absorbAt(aIdx, rodsAtA);
+        absorbAt(bIdx, rodsAtB);
 
         // 新ロッド作成 → パーツに入れる
         const rodIdx = App.Joints.get('rod').create(aIdx, bIdx);
