@@ -43,12 +43,24 @@
 
     draw(ctx, rod, _state, selected) {
       const a = state.particles[rod.a], b = state.particles[rod.b];
-      ctx.strokeStyle = selected ? '#ffcb6b' : '#c0d0e0';
-      ctx.lineWidth = selected ? 4 : 3;
+      const violated = App.physics.rodViolated(rod);
+      if (violated) {
+        ctx.strokeStyle = selected ? '#ff8866' : '#ff5555';
+        ctx.lineWidth = selected ? 5 : 4;
+      } else {
+        ctx.strokeStyle = selected ? '#ffcb6b' : '#c0d0e0';
+        ctx.lineWidth = selected ? 4 : 3;
+      }
       ctx.beginPath();
       ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
       ctx.stroke();
-      if (selected) {
+      if (violated) {
+        const mx = (a.x + b.x)/2, my = (a.y + b.y)/2;
+        ctx.fillStyle = '#ff5555';
+        ctx.font = 'bold 11px ui-monospace, monospace';
+        const sign = rod.error > 0 ? '+' : '';
+        ctx.fillText(`⚠ ${rod.name} 誤差 ${sign}${rod.error.toFixed(1)}`, mx + 8, my - 8);
+      } else if (selected) {
         const mx = (a.x + b.x)/2, my = (a.y + b.y)/2;
         const len = Math.hypot(b.x - a.x, b.y - a.y);
         ctx.fillStyle = '#ffcb6b';

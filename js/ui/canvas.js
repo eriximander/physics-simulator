@@ -91,6 +91,22 @@
     }
   }
 
+  function drawViolationBanner() {
+    const violated = state.rods.filter(r => App.physics.rodViolated(r));
+    if (violated.length === 0) return;
+    const pad = 10, h = 34;
+    const names = violated.slice(0, 4).map(r => r.name).join(', ') + (violated.length > 4 ? ` 他${violated.length - 4}本` : '');
+    ctx.fillStyle = 'rgba(200, 40, 40, 0.92)';
+    ctx.fillRect(pad, pad, 540, h);
+    ctx.strokeStyle = '#ff8866';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(pad + 0.5, pad + 0.5, 540, h);
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 12px ui-monospace, monospace';
+    ctx.fillText(`⚠ 物理的に不可能: ${violated.length}本のロッドが長さを保てていません (${names})`,
+      pad + 10, pad + 21);
+  }
+
   function render() {
     drawBackground();
     for (const spec of App.Joints.inDrawOrder()) {
@@ -102,6 +118,7 @@
       }
     }
     drawPendingAndSnap();
+    drawViolationBanner();
   }
 
   function loop() {
