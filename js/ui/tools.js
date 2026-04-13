@@ -10,6 +10,7 @@
   const BUILTIN_TOOLS = {
     pin:    { hint: '点をクリックで固定⇄解除。' },
     drag:   { hint: '点をドラッグで移動。格子スナップが効きます。' },
+    feasibility: { hint: '点をクリック→ドラッグで移動。各拘束が要求する「可動曲線」(円/線/点) が表示されます。' },
     select: { hint: 'クリックで選択。ジョイント(点)を選ぶと角度拘束の追加ができます。' },
     delete: { hint: 'クリックで削除。' },
   };
@@ -44,6 +45,12 @@
       }
     } else if (tool === 'drag') {
       if (snap.particleIdx >= 0) state.dragging = snap.particleIdx;
+    } else if (tool === 'feasibility') {
+      if (snap.particleIdx >= 0) {
+        state.feasibilityTarget = snap.particleIdx;
+        state.dragging = snap.particleIdx;
+        api.renderList();
+      }
     } else if (tool === 'select') {
       if (snap.particleIdx >= 0) {
         const mIdx = App.Joints.get('motor').findByParticle(snap.particleIdx);
@@ -112,7 +119,7 @@
     canvas.addEventListener('dblclick', handleCanvasDblClick);
     window.addEventListener('mouseup', () => { state.dragging = null; });
     window.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') state.pending = null;
+      if (e.key === 'Escape') { state.pending = null; state.feasibilityTarget = null; }
       if (e.key === ' ' && e.target.tagName !== 'INPUT') { App.togglePlay(); e.preventDefault(); }
     });
 
@@ -121,6 +128,7 @@
         const t = btn.dataset.tool;
         state.tool = t;
         state.pending = null;
+        if (t !== 'feasibility') state.feasibilityTarget = null;
         document.querySelectorAll('.tool').forEach(b => b.classList.toggle('active', b === btn));
         document.getElementById('hint').textContent = hintText(t);
         if (state.playing && PLACEMENT_TOOLS.has(t)) App.togglePlay();

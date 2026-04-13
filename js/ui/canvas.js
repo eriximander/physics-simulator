@@ -91,6 +91,72 @@
     }
   }
 
+  // 可動域ツール: 選択粒子にかかる各拘束の「許される位置」を描画する。
+  // ロッド→相手端点を中心とする円、スライダー→レール線分、一致拘束→相手粒子の点。
+  // 2 つ以上のラインが交わる点に置くと複数拘束を同時に満たせる。
+  function drawFeasibility() {
+    const idx = state.feasibilityTarget;
+    if (idx == null || !state.particles[idx]) return;
+    const P = state.particles[idx];
+
+    ctx.save();
+    ctx.setLineDash([5, 4]);
+    ctx.lineWidth = 2;
+
+    // Rod constraints: circle around the other endpoint
+    ctx.strokeStyle = 'rgba(130, 217, 130, 0.75)';
+    for (const rod of state.rods) {
+      if (rod.a !== idx && rod.b !== idx) continue;
+      const otherIdx = rod.a === idx ? rod.b : rod.a;
+      const Q = state.particles[otherIdx];
+      ctx.beginPath();
+      ctx.arc(Q.x, Q.y, rod.length, 0, Math.PI * 2);
+      ctx.stroke();
+      // label at top of circle
+      ctx.save();
+      ctx.setLineDash([]);
+      ctx.fillStyle = 'rgba(130, 217, 130, 0.95)';
+      ctx.font = '10px ui-monospace, monospace';
+      ctx.fillText(`${rod.name}:${Q.name} r=${rod.length.toFixed(0)}`, Q.x + rod.length + 4, Q.y);
+      ctx.restore();
+    }
+
+    // Slider constraints: rail segment
+    ctx.strokeStyle = 'rgba(122, 206, 240, 0.85)';
+    for (const sld of state.sliders) {
+      if (sld.particle !== idx) continue;
+      const a = state.particles[sld.a], b = state.particles[sld.b];
+      ctx.beginPath();
+      ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
+      ctx.stroke();
+    }
+
+    // Coincidence constraints: mark the other particle
+    ctx.strokeStyle = 'rgba(93, 226, 163, 0.9)';
+    ctx.fillStyle = 'rgba(93, 226, 163, 0.35)';
+    for (const c of state.coincidences) {
+      if (c.a !== idx && c.b !== idx) continue;
+      const otherIdx = c.a === idx ? c.b : c.a;
+      const Q = state.particles[otherIdx];
+      ctx.beginPath();
+      ctx.arc(Q.x, Q.y, 10, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    }
+
+    ctx.restore();
+
+    // target marker
+    ctx.strokeStyle = '#ffcb6b';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.arc(P.x, P.y, 14, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillStyle = '#ffcb6b';
+    ctx.font = 'bold 11px ui-monospace, monospace';
+    ctx.fillText(`可動域: ${P.name}`, P.x + 16, P.y - 14);
+  }
+
   function drawViolationBanner() {
     const violated = state.rods.filter(r => App.physics.rodViolated(r));
     if (violated.length === 0) return;
@@ -118,6 +184,7 @@
       }
     }
     drawPendingAndSnap();
+    drawFeasibility();
     drawViolationBanner();
   }
 

@@ -21,6 +21,7 @@ App.state = {
   selected: null,   // { type, index } | null
   pending: null,    // ツールの途中状態 (2点目待ちなど)
   dragging: null,   // ドラッグ中の粒子 index
+  feasibilityTarget: null,  // 可動域ツールで選んだ粒子 index (boundary 可視化の対象)
 
   mouse: { x: 0, y: 0 },
 
