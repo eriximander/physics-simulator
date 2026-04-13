@@ -9,7 +9,8 @@ App.state = {
   sliders: [],
   angleConstraints: [],
   coincidences: [],
-  counters: { p: 0, r: 0, m: 0, s: 0, a: 0, c: 0 },
+  parts: [],
+  counters: { p: 0, r: 0, m: 0, s: 0, a: 0, c: 0, pt: 0 },
 
   tool: 'rod',
   playing: false,

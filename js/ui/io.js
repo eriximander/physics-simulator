@@ -10,6 +10,7 @@
       sliders: state.sliders,
       angleConstraints: state.angleConstraints,
       coincidences: state.coincidences,
+      parts: state.parts,
       counters: state.counters,
       originX: state.originX,
       originY: state.originY,
@@ -29,10 +30,13 @@
       state.sliders = d.sliders || [];
       state.angleConstraints = d.angleConstraints || [];
       state.coincidences = d.coincidences || [];
+      state.parts = d.parts || [];
       state.counters = d.counters || {
         p: state.particles.length, r: state.rods.length, m: state.motors.length,
-        s: state.sliders.length, a: state.angleConstraints.length, c: state.coincidences.length,
+        s: state.sliders.length, a: state.angleConstraints.length,
+        c: state.coincidences.length, pt: state.parts.length,
       };
+      if (state.counters.pt == null) state.counters.pt = state.parts.length;
       if (d.originX != null) state.originX = d.originX;
       if (d.originY != null) state.originY = d.originY;
       if (d.gridSize) { state.gridSize = d.gridSize; document.getElementById('gridSize').value = d.gridSize; }
@@ -44,8 +48,8 @@
   function clearAll() {
     if (!confirm('全削除しますか？')) return;
     state.particles = []; state.rods = []; state.motors = []; state.sliders = [];
-    state.angleConstraints = []; state.coincidences = [];
-    state.counters = { p: 0, r: 0, m: 0, s: 0, a: 0, c: 0 };
+    state.angleConstraints = []; state.coincidences = []; state.parts = [];
+    state.counters = { p: 0, r: 0, m: 0, s: 0, a: 0, c: 0, pt: 0 };
     state.selected = null; state.pending = null;
     App.sidebar.updateProps(); App.sidebar.renderList();
   }

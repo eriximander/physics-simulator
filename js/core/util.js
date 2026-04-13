@@ -103,39 +103,59 @@
   //     (→ angleConstraint.onRodRemoved がロッド削除に連鎖的に呼ばれる)
   //  2) 各ジョイントに「粒子 idx が消える」ことを伝え、参照を片付けて index を詰める
   //  3) state.particles から外す
-  util.removeParticle = (idx) => {
+  //
+  // confirm: パーツに所属するロッド/粒子を消す時に確認ダイアログを出すか。
+  // カスケード呼び出し (removeParticle → removeRod) では false にして重複確認を避ける。
+  util.removeParticle = (idx, { confirm = true } = {}) => {
+    if (confirm) {
+      const part = App.Joints.get('part');
+      const msg = part && part.confirmDeleteParticle ? part.confirmDeleteParticle(idx) : null;
+      if (msg && !window.confirm(msg)) return false;
+    }
     const shift = i => i > idx ? i - 1 : i;
     const depRods = [];
     state.rods.forEach((r, i) => { if (r.a === idx || r.b === idx) depRods.push(i); });
-    for (let k = depRods.length - 1; k >= 0; k--) util.removeRod(depRods[k]);
+    for (let k = depRods.length - 1; k >= 0; k--) util.removeRod(depRods[k], { confirm: false });
     for (const spec of App.Joints.all()) {
       if (spec.onParticleRemoved) spec.onParticleRemoved(idx, state, shift);
     }
     state.particles.splice(idx, 1);
     state.selected = null;
+    return true;
   };
 
   // ロッドを削除し、依存ジョイントに通知する。
-  util.removeRod = (idx) => {
+  util.removeRod = (idx, { confirm = true } = {}) => {
+    if (confirm) {
+      const part = App.Joints.get('part');
+      const msg = part && part.confirmDeleteRod ? part.confirmDeleteRod(idx) : null;
+      if (msg && !window.confirm(msg)) return false;
+    }
     const shiftR = i => i > idx ? i - 1 : i;
     for (const spec of App.Joints.all()) {
       if (spec.onRodRemoved) spec.onRodRemoved(idx, state, shiftR);
     }
     state.rods.splice(idx, 1);
     state.selected = null;
+    return true;
   };
 
   // 登録された種別ごとの delete ルータ。
   util.deleteItem = (type, idx) => {
-    if (type === 'particle') { util.removeParticle(idx); return; }
-    if (type === 'rod') { util.removeRod(idx); return; }
+    if (type === 'particle') return util.removeParticle(idx);
+    if (type === 'rod') return util.removeRod(idx);
     const spec = App.Joints.get(type);
-    if (!spec) return;
+    if (!spec) return false;
     const arr = state[spec.storage];
     const item = arr[idx];
+    if (spec.confirmDeleteSelf) {
+      const msg = spec.confirmDeleteSelf(item, state);
+      if (msg && !window.confirm(msg)) return false;
+    }
     if (spec.onDeleteSelf) spec.onDeleteSelf(item, state);
     arr.splice(idx, 1);
     state.selected = null;
+    return true;
   };
 
   App.util = util;
