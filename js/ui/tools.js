@@ -75,6 +75,26 @@
     }
   }
 
+  // ロッドをダブルクリックして長さを直接編集。ツールバーの選択状態に関係なく効く。
+  function handleCanvasDblClick() {
+    const rIdx = util.getRodAt(state.mouse.x, state.mouse.y);
+    if (rIdx < 0) return;
+    const rod = state.rods[rIdx];
+    const input = window.prompt(`${rod.name} の長さ`, rod.length.toFixed(1));
+    if (input == null) return;
+    const v = parseFloat(input);
+    if (!isFinite(v) || v <= 0) { alert('正の数値を入力してください'); return; }
+    rod.length = v;
+    // モーターが管理してるロッドなら半径側も合わせる (モーターの想定長さとずれないように)
+    const m = state.motors.find(m =>
+      (m.center === rod.a && m.driven === rod.b) ||
+      (m.center === rod.b && m.driven === rod.a));
+    if (m) m.radius = v;
+    state.selected = { type: 'rod', index: rIdx };
+    App.sidebar.updateProps();
+    App.sidebar.renderList();
+  }
+
   function setup() {
     canvas.addEventListener('mousemove', (e) => {
       const r = canvas.getBoundingClientRect();
@@ -89,6 +109,7 @@
       }
     });
     canvas.addEventListener('mousedown', handleCanvasClick);
+    canvas.addEventListener('dblclick', handleCanvasDblClick);
     window.addEventListener('mouseup', () => { state.dragging = null; });
     window.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') state.pending = null;
