@@ -48,6 +48,18 @@
     return out;
   }
 
+  // モーターが中心⇄駆動点を繋ぐために自動生成したロッドか?
+  // パーツツールはこの管理ロッドを吸収しないし、角度拘束のアンカーにもしない
+  // (モーターは駆動点を強制的に動かすので、剛結すると過剰拘束になる)。
+  function isMotorManagedRod(rodIdx) {
+    const rod = state.rods[rodIdx];
+    if (!rod) return false;
+    return state.motors.some(m =>
+      (m.center === rod.a && m.driven === rod.b) ||
+      (m.center === rod.b && m.driven === rod.a)
+    );
+  }
+
   App.Joints.register({
     type: 'part',
     title: 'パーツ',
@@ -205,6 +217,7 @@
         }
 
         // 端点に触れている「単独ロッド (.part == null)」をこのパーツに吸収する。
+        // ただしモーター管理ロッドは吸収しない (→ 駆動点側はピボット接合になる)。
         // 同じ端点に既存のアンカー (このパーツ内のロッド) があれば、吸収時に
         // その場で角度拘束を張って剛性を確保する。
         const absorbAt = (vertex, touching) => {
@@ -213,6 +226,7 @@
             const rod = state.rods[ri];
             if (rod.part === partIdx) continue;   // 既にこのパーツ
             if (rod.part != null) continue;       // 他パーツ所属は奪わない
+            if (isMotorManagedRod(ri)) continue;  // モーター管理ロッドは触らない
             rod.part = partIdx;
             if (anchor != null && anchor !== ri) {
               addAngleConstraintAt(vertex, anchor, ri);
@@ -228,11 +242,15 @@
         const rodIdx = App.Joints.get('rod').create(aIdx, bIdx);
         state.rods[rodIdx].part = partIdx;
 
-        // 剛性 — 各端点で「同パーツ内の既存ロッド 1 本」との角度を固定 (最小構成)
+        // 剛性 — 各端点で「同パーツ内の既存ロッド 1 本」との角度を固定 (最小構成)。
+        // モーター管理ロッドはスキップ (念のため: 吸収しない時点で既に part != partIdx だが
+        // 将来パーツが先にあった状態で motor-rod を絡めるケースのため保険)。
         const pickExisting = (vertex) => {
           for (const ri of rodsTouching(vertex)) {
             if (ri === rodIdx) continue;
-            if (state.rods[ri].part === partIdx) return ri;
+            if (state.rods[ri].part !== partIdx) continue;
+            if (isMotorManagedRod(ri)) continue;
+            return ri;
           }
           return -1;
         };
