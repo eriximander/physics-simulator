@@ -126,14 +126,16 @@
       hint: '中心→腕の先端の順にクリックで回転ジョイント作成。',
       onClick(snap, s, api) {
         const { util } = App;
-        let idx = snap.particleIdx >= 0 ? snap.particleIdx : util.addParticle(snap.x, snap.y);
+        // 既存粒子にスナップしてない時だけ「必要になった分」1 回だけ作る。
+        const ensure = () => snap.particleIdx >= 0 ? snap.particleIdx : util.addParticle(snap.x, snap.y);
         if (s.pending == null) {
+          const idx = ensure();
           const p = state.particles[idx];
           if (p.driven) { alert('駆動点は中心にできません'); return; }
           p.pinned = true; p.px = p.x; p.py = p.y;
           s.pending = { tool: 'motor', pIdx: idx, x: p.x, y: p.y };
         } else {
-          const dIdx = snap.particleIdx >= 0 ? snap.particleIdx : util.addParticle(snap.x, snap.y);
+          const dIdx = ensure();
           if (dIdx === s.pending.pIdx) { s.pending = null; return; }
           const d = state.particles[dIdx];
           if (d.driven) { alert('この点は既に駆動されています'); s.pending = null; return; }

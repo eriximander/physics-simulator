@@ -91,11 +91,13 @@
       hint: '2点クリックでロッド作成。角度/格子/粒子にスナップ補正。',
       onClick(snap, s, api) {
         const { util } = App;
-        let idx = snap.particleIdx >= 0 ? snap.particleIdx : util.addParticle(snap.x, snap.y);
+        // スナップ先が既存粒子ならその index、そうでないなら 1 回だけ粒子を作って共有。
+        const ensure = () => snap.particleIdx >= 0 ? snap.particleIdx : util.addParticle(snap.x, snap.y);
         if (s.pending == null) {
+          const idx = ensure();
           s.pending = { tool: 'rod', pIdx: idx, x: state.particles[idx].x, y: state.particles[idx].y };
         } else {
-          const bIdx = snap.particleIdx >= 0 ? snap.particleIdx : util.addParticle(snap.x, snap.y);
+          const bIdx = ensure();
           if (bIdx !== s.pending.pIdx) {
             App.Joints.get('rod').create(s.pending.pIdx, bIdx);
           }
