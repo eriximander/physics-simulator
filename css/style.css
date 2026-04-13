@@ -1,0 +1,41 @@
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", sans-serif; background: #1e1e1e; color: #ddd; overflow: hidden; }
+#app { display: flex; height: 100vh; }
+#leftpanel { width: 240px; background: #232323; border-right: 1px solid #444; overflow-y: auto; padding: 10px 10px 30px; }
+#canvas { flex: 1; background: #2a2a2a; cursor: crosshair; display: block; min-width: 300px; }
+#sidebar { width: 300px; background: #252525; padding: 14px 14px 30px; border-left: 1px solid #444; overflow-y: auto; }
+h3 { margin: 10px 0 6px; font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 1.5px; }
+h4 { margin: 8px 0 4px; font-size: 11px; color: #7ab; text-transform: uppercase; letter-spacing: 1px; }
+.tools { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+.tool { padding: 8px 6px; background: #333; border: 1px solid #444; color: #ddd; cursor: pointer; border-radius: 3px; font-size: 12px; text-align: center; }
+.tool.active { background: #4a7fb8; border-color: #6a9fd8; color: #fff; }
+.tool:hover:not(.active) { background: #3a3a3a; }
+.row { display: flex; align-items: center; gap: 6px; margin: 5px 0; font-size: 12px; }
+.row label { flex: 1; color: #aaa; }
+input[type=number], input[type=text], select { width: 100px; background: #1a1a1a; border: 1px solid #444; color: #ddd; padding: 4px 6px; border-radius: 3px; font-size: 12px; }
+input[type=range] { flex: 1; }
+input[type=checkbox] { accent-color: #4a7fb8; }
+button { padding: 6px 10px; background: #333; border: 1px solid #555; color: #ddd; cursor: pointer; border-radius: 3px; font-size: 12px; }
+button:hover { background: #3e3e3e; }
+button.primary { background: #4a7fb8; border-color: #6a9fd8; color: #fff; }
+button.preset { padding: 4px 8px; font-size: 11px; }
+#hint { font-size: 11px; color: #9ab8dc; background: #2a3040; padding: 6px 8px; border-radius: 3px; margin-top: 6px; min-height: 28px; line-height: 1.5; }
+.sep { height: 1px; background: #3a3a3a; margin: 12px 0; }
+.num { width: 52px; text-align: right; color: #aaa; font-size: 11px; font-family: ui-monospace, monospace; }
+.legend { font-size: 10px; color: #777; margin-top: 10px; line-height: 1.7; }
+.legend span { display: inline-block; width: 9px; height: 9px; border-radius: 50%; vertical-align: middle; margin-right: 4px; }
+.list-section { margin-bottom: 8px; }
+.list-empty { color: #666; font-size: 11px; padding: 4px 8px; font-style: italic; }
+.list-item { display: flex; align-items: center; gap: 5px; padding: 4px 6px; border-radius: 3px; cursor: pointer; margin: 1px 0; border: 1px solid transparent; }
+.list-item:hover { background: #2e2e2e; }
+.list-item.selected { background: #34547a; border-color: #6a9fd8; }
+.list-item .icon { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.list-item input[type=text] { flex: 1; width: auto; background: transparent; border: 1px solid transparent; color: #ddd; padding: 2px 4px; font-size: 12px; border-radius: 2px; }
+.list-item input[type=text]:focus { background: #1a1a1a; border-color: #555; outline: none; }
+.list-item .meta { font-size: 10px; color: #888; font-family: ui-monospace, monospace; white-space: nowrap; }
+.list-item .del { color: #777; background: transparent; border: none; padding: 0 4px; font-size: 14px; cursor: pointer; line-height: 1; }
+.list-item .del:hover { color: #f88; }
+.list-header { display: flex; align-items: baseline; justify-content: space-between; padding: 0 4px; }
+.list-header .count { color: #666; font-size: 10px; font-family: ui-monospace, monospace; }
+.subbox { border: 1px solid #3a3a3a; border-radius: 4px; padding: 8px; margin-top: 8px; background: #1e1e1e; }
+.subbox h5 { margin: 0 0 6px; font-size: 11px; color: #aaa; }
