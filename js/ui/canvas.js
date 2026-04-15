@@ -91,62 +91,77 @@
     }
   }
 
-  // 可動域ツール: 選択粒子にかかる各拘束の「許される位置」を描画する。
-  // ロッド→相手端点を中心とする円、スライダー→レール線分、一致拘束→相手粒子の点。
-  // 2 つ以上のラインが交わる点に置くと複数拘束を同時に満たせる。
+  // 可動域ツール: 各座標を「もしターゲット点をそこに置いたら全拘束を満たせるか」で
+  // 評価し、満たせる位置だけを塗る。他の粒子は現在位置で固定とみなす単純評価。
+  // 緑のセル = その点をそこに置けば機構が破綻しない位置。
+  function collectFeasibilityConstraints(idx) {
+    const cons = [];
+    for (const rod of state.rods) {
+      if (rod.a !== idx && rod.b !== idx) continue;
+      const Q = state.particles[rod.a === idx ? rod.b : rod.a];
+      cons.push({ kind: 'rod', qx: Q.x, qy: Q.y, len: rod.length });
+    }
+    for (const sld of state.sliders) {
+      if (sld.particle !== idx) continue;
+      const A = state.particles[sld.a], B = state.particles[sld.b];
+      cons.push({ kind: 'slider', ax: A.x, ay: A.y, bx: B.x, by: B.y });
+    }
+    for (const c of state.coincidences) {
+      if (c.a !== idx && c.b !== idx) continue;
+      const Q = state.particles[c.a === idx ? c.b : c.a];
+      cons.push({ kind: 'coincidence', qx: Q.x, qy: Q.y });
+    }
+    return cons;
+  }
+
+  function violationAt(cons, x, y) {
+    let max = 0;
+    for (const c of cons) {
+      let e = 0;
+      if (c.kind === 'rod') {
+        e = Math.abs(Math.hypot(x - c.qx, y - c.qy) - c.len);
+      } else if (c.kind === 'slider') {
+        const vx = c.bx - c.ax, vy = c.by - c.ay;
+        const wx = x - c.ax, wy = y - c.ay;
+        const len2 = vx * vx + vy * vy;
+        let t = len2 > 0 ? (vx * wx + vy * wy) / len2 : 0;
+        t = Math.max(0, Math.min(1, t));
+        const px = c.ax + t * vx, py = c.ay + t * vy;
+        e = Math.hypot(x - px, y - py);
+      } else if (c.kind === 'coincidence') {
+        e = Math.hypot(x - c.qx, y - c.qy);
+      }
+      if (e > max) max = e;
+    }
+    return max;
+  }
+
   function drawFeasibility() {
     const idx = state.feasibilityTarget;
     if (idx == null || !state.particles[idx]) return;
     const P = state.particles[idx];
+    const cons = collectFeasibilityConstraints(idx);
 
-    ctx.save();
-    ctx.setLineDash([5, 4]);
-    ctx.lineWidth = 2;
-
-    // Rod constraints: circle around the other endpoint
-    ctx.strokeStyle = 'rgba(130, 217, 130, 0.75)';
-    for (const rod of state.rods) {
-      if (rod.a !== idx && rod.b !== idx) continue;
-      const otherIdx = rod.a === idx ? rod.b : rod.a;
-      const Q = state.particles[otherIdx];
-      ctx.beginPath();
-      ctx.arc(Q.x, Q.y, rod.length, 0, Math.PI * 2);
-      ctx.stroke();
-      // label at top of circle
-      ctx.save();
-      ctx.setLineDash([]);
-      ctx.fillStyle = 'rgba(130, 217, 130, 0.95)';
-      ctx.font = '10px ui-monospace, monospace';
-      ctx.fillText(`${rod.name}:${Q.name} r=${rod.length.toFixed(0)}`, Q.x + rod.length + 4, Q.y);
-      ctx.restore();
+    // 拘束無し → 自由 (キャンバス全体うっすら緑)
+    if (cons.length === 0) {
+      ctx.fillStyle = 'rgba(130, 217, 130, 0.10)';
+      ctx.fillRect(0, 0, W, H);
+    } else {
+      // グリッドサンプリング: max violation < tol のセルだけ緑で埋める。
+      // step を細かくするほど精度が上がるが処理重くなる。tol は step 程度に取る。
+      const step = 5;
+      const tol = step;
+      ctx.fillStyle = 'rgba(130, 217, 130, 0.55)';
+      for (let x = 0; x < W; x += step) {
+        for (let y = 0; y < H; y += step) {
+          if (violationAt(cons, x, y) < tol) {
+            ctx.fillRect(x - step / 2, y - step / 2, step, step);
+          }
+        }
+      }
     }
 
-    // Slider constraints: rail segment
-    ctx.strokeStyle = 'rgba(122, 206, 240, 0.85)';
-    for (const sld of state.sliders) {
-      if (sld.particle !== idx) continue;
-      const a = state.particles[sld.a], b = state.particles[sld.b];
-      ctx.beginPath();
-      ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
-      ctx.stroke();
-    }
-
-    // Coincidence constraints: mark the other particle
-    ctx.strokeStyle = 'rgba(93, 226, 163, 0.9)';
-    ctx.fillStyle = 'rgba(93, 226, 163, 0.35)';
-    for (const c of state.coincidences) {
-      if (c.a !== idx && c.b !== idx) continue;
-      const otherIdx = c.a === idx ? c.b : c.a;
-      const Q = state.particles[otherIdx];
-      ctx.beginPath();
-      ctx.arc(Q.x, Q.y, 10, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
-    }
-
-    ctx.restore();
-
-    // target marker
+    // ターゲットマーカー
     ctx.strokeStyle = '#ffcb6b';
     ctx.lineWidth = 2.5;
     ctx.beginPath();
